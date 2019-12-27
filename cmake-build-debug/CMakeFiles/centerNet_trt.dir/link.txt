@@ -1,0 +1,1 @@
+/usr/bin/g++  -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/centerNet_trt.dir/main.cpp.o  -o centerNet_trt 
