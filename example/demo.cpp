@@ -2,8 +2,6 @@
 // Created by StephenFang on 2019/12/24.
 //
 
-#ifndef CENTERNET_TRT_DEMO_H
-#define CENTERNET_TRT_DEMO_H
 
 //#include <argparse.h>
 #include <cxxopts.hpp>
@@ -18,11 +16,12 @@
 //options.add_options()
 //("f,file", "File name", cxxopts::value<std::string>());
 int main(){
-    cxxopts::Options options("centerNet_trt", "using tersorrt to speed up detection" )
+    cxxopts::Options options("centerNet_trt", "using tersorrt to speed up detection" );
     options.add_options()
             ("e, engine", "input Engine", cxxopts::value<std::string>())
             ("i, img", "input-demo-img", cxxopts::value<std::string>())
             ("v video", "input-demo-video", cxxopts::value<std::string>())
+            ;
     cv::RNG rng(244);
 
     std::vector<cv::Scalar> color;
@@ -32,14 +31,10 @@ int main(){
     }
 
     cv::namedWindow("detection", cv::WINDOW_NORMAL);
-    cv::resizeWindow("detection, 1024, 768");
+    cv::resizeWindow("detection", 1024, 768);
 
 
 
 
 
 }
-
-
-
-#endif //CENTERNET_TRT_DEMO_H

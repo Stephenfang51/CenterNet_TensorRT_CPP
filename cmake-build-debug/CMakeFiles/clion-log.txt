@@ -1,5 +1,5 @@
 /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -G "CodeBlocks - Unix Makefiles" /Users/stephenfang/CLionProjects/centerNet_trt
-CMake Error at CMakeLists.txt:6 (find_package):
+CMake Error at CMakeLists.txt:8 (find_package):
   By not providing "FindOpenCV.cmake" in CMAKE_MODULE_PATH this project has
   asked CMake to find a package configuration file provided by "OpenCV", but
   CMake did not find one.
