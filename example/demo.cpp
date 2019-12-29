@@ -18,9 +18,9 @@
 int main(){
     cxxopts::Options options("centerNet_trt", "using tersorrt to speed up detection" );
     options.add_options()
-            ("e, engine", "input Engine", cxxopts::value<std::string>())
-            ("i, img", "input-demo-img", cxxopts::value<std::string>())
-            ("v video", "input-demo-video", cxxopts::value<std::string>())
+            ("e, engine", "the path of input Engine (str)", cxxopts::value<std::string>())
+            ("i, img", "the path of input-demo-img (str)", cxxopts::value<std::string>())
+            ("v video", "the path of input-demo-video (str)", cxxopts::value<std::string>())
             ;
     cv::RNG rng(244);
 

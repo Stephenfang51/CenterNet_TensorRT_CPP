@@ -52,8 +52,6 @@ namespace cttrt
         nvinfer1::ICudaEngine* engine = builder->buildCudaEngine(*network);
 //        nvinfer1::ICudaEngine* engine = builder->buildEngineWithConfig(*network);
         //buildcudaEngine will be removed future
-
-
         std::cout << "build engine finished" << std::endl;
 
         parser->destroy();
@@ -61,16 +59,17 @@ namespace cttrt
 //        config->destroy();
         builder->destroy();
 
-        //nvinfer1::IHostMemory *serializedModel = engine->serialize();
-        ////save to disk ?
+        nvinfer1::IHostMemory * serializedEngine = engine->serialize();
+        ////save to disk ? 原作者这里没有直接save engine to disk, 而是另外做了一个save engine function
         ////covnersion and run Engine should be on the same GPU
-        //engine->destroy();
+        engine->destroy();
 
 
-        //IRuntime* runtime = createInferRuntime(gLogger);
-        //ICudaEngine* engine = runtime->deserializeCudaEngine(modelData, modelSize, nullptr);
+        mRunTime = nvinfer1::createInferRuntime(gLogger);
+        mEngine= mRunTime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size(), nullptr);
+        //执行反序列因为要开始inference
 
-//        serializedModel->destroy();
+        serializedEngine->destroy(); //反序列结束可以destroy了
 
 
 
@@ -107,7 +106,7 @@ namespace cttrt
 
 //        InitEngine();
 
-    }
+    }//constructor （engine）
 
 
 
@@ -140,6 +139,36 @@ namespace cttrt
 //
 //    }
 
+    void cttrtNet::saveEngine(const std::string & file_path){
+        if(mEngine){
+            nvinfer1::IHostMemory* serialized_model  = mEngine->serialize(); //将反序列的 再次序列回去
+            std::ofstream file(file_path, std::ios::binary | std::ios::out);
+            file.write((char*)(serialized_model -> data()), serialized_model -> size());
+            file.close();
 
-
+        }
+    }
 } //namespace cttrt closed
+
+
+/////下面要删除
+//std::ofstream ofs("serialized_engine.trt", std::ios::out | std::ios::binary);
+//ofs.write((char*)(serialized_model ->data()), serialized_model ->size());
+//ofs.close();
+//
+//
+//if(mEngine)
+//{
+//nvinfer1::IHostMemory* data = mEngine->serialize(); //创建data指针 指向 engine 序列化
+//std::ofstream file; //ofstream 读取文件
+//file.open(fileName,std::ios::binary | std::ios::out); //为输出而打开文件（以二进制的方式）
+//
+//if(!file.is_open())//如果没有成功开启
+//{
+//std::cout << "read create engine file" << fileName <<" failed" << std::endl;
+//return;
+//}
+//
+//file.write((const char*)data->data(), data->size()); //写入engine
+//file.close();
+//}

@@ -71,12 +71,19 @@ file(GLOB CPP_SRC src/*.cpp) ## src下所有的cpp文件
 #src先将测试用的main.cpp拿掉， 留下demo.cpp中的main 否则重叠
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
-set(src ${src}  example/demo.cpp)
-
+set(src ${src}  example/demo.cpp example/buildEngine.cpp)
 
 #add_executable(main_test ${src})
-add_executable(demo example/demo.cpp ${CPP_SRC})
+#target_link_libraries(main ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
+
+
+add_executable(demo example/demo.cpp  ${CPP_SRC})
 target_link_libraries(demo ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
+
+
+add_executable(buildEngine example/buildEngine.cpp ${CPP_SRC})
+target_link_libraries(buildEngine ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
+
 
 
 #add_executable(demo example/demo.cpp ${src})

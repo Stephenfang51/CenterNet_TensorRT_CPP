@@ -13,13 +13,16 @@ int main(int argc, char* argv[]) {
     //cxxopts test
     cxxopts::Options options("MyProgram", "One line description of MyProgram");
     options.add_options()
-            ("f,file", "File name", cxxopts::value<std::string>());
+            ("f,file", "File name", cxxopts::value<std::string>())
+            ("n,number", "numbers", cxxopts::value<int>())
+            ;
     auto result = options.parse(argc, argv);
     if (result.count("file")){
         std::cout << "OK ! " << std::endl;
     }
 
     std::cout << result["file"].as<std::string>() << std::endl;
+    std::cout << result["number"].as<int>() << std::endl;
     //cxxopts test end
 
     cv::RNG rng(244);

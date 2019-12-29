@@ -13,6 +13,7 @@
 #include "NvOnnxParser.h"
 #include <cttrt_Net.h>
 #include <utils.h>
+#include <cxxopts.hpp>
 namespace cttrt {
     enum struct RUN_MODE
     {
@@ -27,8 +28,7 @@ namespace cttrt {
 
         cttrtNet(const std::string &onnxfile,
                  const std::string &calibfile,
-                 RUN_MODE mode = RUN_MODE::FLOAT32
-        );
+                 RUN_MODE mode = RUN_MODE::FLOAT32);
 
         cttrtNet(const std::string &enginefile);
 
@@ -37,7 +37,8 @@ namespace cttrt {
         }
 
 
-        void saveEngine(const std::string &fileName);
+//        void saveEngine(const cxxopts::OptionValues & file_path);
+        void saveEngine(const std::string & file_path);
 
 
         void doInference(const void *inputdata, void *outputdata);
