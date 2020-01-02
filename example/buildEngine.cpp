@@ -47,33 +47,10 @@ parse(int argc, char* argv[])
 }//parse closed
 
 int main(int argc, char* argv[]){
-//    cxxopts::Options options("buildEngine", "buildEngine" );
-//    options.add_options()
-//            ("i, input_onnxfile", "the path of  input-onnxfile (str)", cxxopts::value<std::string>())
-//            ("o, output_engine_file", "the path of output-enginefile )(str)", cxxopts::value<std::string>())
-//            ("m, mode", "run-mode (int)", cxxopts::value<int>()->default_value("0"))
-//            ;
-//    auto result = options.parse(argc, argv);
-//    if (result.count("input_onnxfile")){
-//        std::string input_onnxfile = result["input_onxnfile"].as<std::string>();
-//    }
-//    else {
-//        std::cout << "No input onnx_file" << std::endl;
-//        exit(-1);
-//    }
-//    if (result.count("output_engine_file")){
-//        std::string output_engine_file = result["output_engine_file"].as<std::string>();
-//    }
-//    else {
-//        std::cout << "No output engine file" << std::endl;
-//        exit(-1);
-//    }
 
 
-    ///以下是测试
     auto result = parse(argc, argv);
 
-    ///以上是测试
 
     std::string input_onnxfile = result["input_onnxfile"].as<std::string>();
     std::string output_engine_file = result["output_engine_file"].as<std::string>();
@@ -85,9 +62,8 @@ int main(int argc, char* argv[]){
     if(result["mode"].as<int>() == 1 ) mode = cttrt::RUN_MODE::FLOAT16;
     if(result["mode"].as<int>() == 2 ) mode = cttrt::RUN_MODE::INT8;
 
-//    cttrt::cttrtNet net = cttrt::cttrtNet(result["input_onnxfile"].as<std::string>(), r.as<std::string>(), mode);
-//    cttrt::cttrtNet net = cttrt::cttrtNet(result["input_onnxfile"].as<std::string>(), result["input_onnxfile"].as<std::string, mode);
-    cttrt::cttrtNet net = cttrt::cttrtNet(input_onnxfile, input_onnxfile, mode);
+    //TODO cttrtNet 的calibfile 还没建构好 暂时先用input_onnxfile替代
+    cttrt::cttrtNet net = cttrt::cttrtNet(input_onnxfile, output_engine_file, mode);
     net.saveEngine(result["output_engine_file"].as<std::string>());
     std::cout << "save Engine sucessfully" << std::endl;
 

@@ -27,8 +27,9 @@ namespace cttrt {
     public:
 
         cttrtNet(const std::string &onnxfile,
-                 const std::string &calibfile,
+                 const std::string &calibfile = 0,
                  RUN_MODE mode = RUN_MODE::FLOAT32);
+
 
         cttrtNet(const std::string &enginefile);
 
@@ -41,7 +42,7 @@ namespace cttrt {
         void saveEngine(const std::string & file_path);
 
 
-        void doInference(const void *inputdata, void *outputdata);
+        void doInference(const void *inputData, void *outputData, int batchSize = 1);
 
         //void printTime()??
 
@@ -52,9 +53,9 @@ namespace cttrt {
         void InitEngine();
 
         //set all null_ptr
-        nvinfer1::IExecutionContext *mContext = nullptr;
-        nvinfer1::ICudaEngine *mEngine = nullptr;
-        nvinfer1::IRuntime *mRunTime = nullptr;
+        nvinfer1::IExecutionContext *mTrtContext = nullptr;
+        nvinfer1::ICudaEngine *mTrtEngine = nullptr;
+        nvinfer1::IRuntime *mTrtRunTime = nullptr;
 
         //    nvinfer1::IExecutionContext* mContext;
         //    nvinfer1::ICudaEngine* mEngine;
@@ -62,11 +63,11 @@ namespace cttrt {
 
         RUN_MODE runMode;
 
-        std::vector<void *> mCudaBuffers;
-        std::vector<int64_t> mBindBufferSizes;
+        std::vector<void *> mTrtCudaBuffer;
+        std::vector<int64_t> mTrtBindBufferSize;
 
         void *cudaOutputBuffer;
-        cudaStream_t mCudaStream;
+        cudaStream_t mTrtCudaStream;
 
         int runIters = 0;
         //int runIters;

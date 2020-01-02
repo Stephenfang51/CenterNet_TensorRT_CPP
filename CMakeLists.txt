@@ -62,7 +62,7 @@ link_directories(${OpenCV_LIB_DIR})
 
 #指出所有源文件
 file(GLOB CPP_SRC src/*.cpp) ## src下所有的cpp文件
-#file(GLOB CU_SRC src/*.cu) ## src下cu文件
+file(GLOB CU_SRC src/*.cu) ## src下cu文件 必须加上
 #aux_source_directory(${CMAKE_CURRENT_LIST_DIR}./src src)
 #set source file
 #set(src main.cpp include/argparse.h src/argparse.cpp)
@@ -73,15 +73,16 @@ file(GLOB CPP_SRC src/*.cpp) ## src下所有的cpp文件
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(src ${src}  example/demo.cpp example/buildEngine.cpp)
 
+
 #add_executable(main_test ${src})
 #target_link_libraries(main ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
 
 
-add_executable(demo example/demo.cpp  ${CPP_SRC})
+cuda_add_executable(demo example/demo.cpp  ${CPP_SRC} ${CU_SRC})
 target_link_libraries(demo ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
 
 
-add_executable(buildEngine example/buildEngine.cpp ${CPP_SRC})
+cuda_add_executable(buildEngine example/buildEngine.cpp ${CPP_SRC} ${CU_SRC})
 target_link_libraries(buildEngine ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
 
 

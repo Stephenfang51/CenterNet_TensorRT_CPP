@@ -3,9 +3,11 @@
 //
 
 #include <cttrt_Net.h>
-#include <cttrt_forward.h>
+#include <maxpooling_gpu.h>
 #include <assert.h>
 #include <fstream>
+#include <chrono>
+#include <ct_trt_config.h>
 
 //#include <entroyCalibrator.h>
 
@@ -65,8 +67,8 @@ namespace cttrt
         engine->destroy();
 
 
-        mRunTime = nvinfer1::createInferRuntime(gLogger);
-        mEngine= mRunTime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size(), nullptr);
+        mTrtRunTime = nvinfer1::createInferRuntime(gLogger);
+        mTrtEngine= mTrtRunTime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size(), nullptr);
         //执行反序列因为要开始inference
 
         serializedEngine->destroy(); //反序列结束可以destroy了
@@ -100,8 +102,8 @@ namespace cttrt
         std::cout << "deserializing " << std::endl;
 
 
-        mRunTime = nvinfer1::createInferRuntime(gLogger);
-        mEngine = mRunTime->deserializeCudaEngine(data.get(), length, nullptr);
+        mTrtRunTime = nvinfer1::createInferRuntime(gLogger);
+        mTrtEngine = mTrtRunTime->deserializeCudaEngine(data.get(), length, nullptr);
         //(const void * 	blob, std::size_t 	size, IPluginFactory * 	pluginFactory)
 
 //        InitEngine();
@@ -111,7 +113,7 @@ namespace cttrt
 
 
 
-    //preprocess for inference
+    //preprocess for inference 以下暂时摆着
 //    void cttrt::InitEngine(){
 //        nvinfer1::IExecutionContext *context = engine->createExecutionContext();
 //
@@ -128,20 +130,68 @@ namespace cttrt
 //
 //            int64_t totalSize = volume(dims) * maxBatchSize * getElementSize(dtype);
 //
-//            mBindBufferSizes[i] = totalSize;
-//            mCudaBuffers[i] = safeCudaMalloc(totalSize);
+//            mTrtBindBufferSizes[i] = totalSize;
+//            mTrtCudaBuffers[i] = safeCudaMalloc(totalSize);
 //        }
-//
-//
-//
-//
-//
-//
-//    }
+
+
+    void cttrtNet::InitEngine()
+        {
+            //mTrtBatchSize = mTrtEngine->getMaxBatchSize();
+            int maxBatchSize = 1;
+            mTrtContext = mTrtEngine->createExecutionContext();
+            assert(mTrtContext != nullptr);
+//            mTrtContext->setProfiler(&mProfiler);
+
+            // Input and output buffer pointers that we pass to the engine - the engine requires exactly IEngine::getNbBindings()
+            int nbBindings = mTrtEngine->getNbBindings();
+
+            mTrtCudaBuffer.resize(nbBindings);
+            mTrtBindBufferSize.resize(nbBindings);
+            for (int i = 0; i < nbBindings; ++i)
+            {
+                nvinfer1::Dims dims = mTrtEngine->getBindingDimensions(i);
+                nvinfer1::DataType dtype = mTrtEngine->getBindingDataType(i);
+                int64_t totalSize = volume(dims) * maxBatchSize * getElementSize(dtype);
+                mTrtBindBufferSize[i] = totalSize;
+                mTrtCudaBuffer[i] = safeCudaMalloc(totalSize);
+//                if(mTrtEngine->bindingIsInput(i))
+            }
+            outputBufferSize = mTrtBindBufferSize[1] * 6 ;
+            cudaOutputBuffer = safeCudaMalloc(outputBufferSize);
+            CUDA_CHECK(cudaStreamCreate(&mTrtCudaStream));
+        } //InitEngine closed
+
+    void cttrtNet::doInference(const void* inputData, void* outputData ,int batchSize)
+    {
+//        const int batchSize = 1;
+
+        // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
+        int inputIndex = 0;
+        CUDA_CHECK(cudaMemcpyAsync(mTrtCudaBuffer[inputIndex], inputData, mTrtBindBufferSize[inputIndex], cudaMemcpyHostToDevice, mTrtCudaStream));
+        auto t_start = std::chrono::high_resolution_clock::now();
+        mTrtContext->execute(batchSize, &mTrtCudaBuffer[inputIndex]);
+
+        ///max pooling and post process
+        maxPooling_gpu(static_cast<const float *>(mTrtCudaBuffer[1]),static_cast<const float *>(mTrtCudaBuffer[2]),
+                         static_cast<const float *>(mTrtCudaBuffer[3]),static_cast<float *>(cudaOutputBuffer),
+                         ouputSize,ouputSize,classNum,kernelSize,visThresh);
+
+        auto t_end = std::chrono::high_resolution_clock::now();
+        float total = std::chrono::duration<float, std::milli>(t_end - t_start).count();
+
+        std::cout << "Time taken for inference is " << total << " ms." << std::endl;
+
+        CUDA_CHECK(cudaMemcpyAsync(outputData, cudaOutputBuffer, outputBufferSize, cudaMemcpyDeviceToHost, mTrtCudaStream));
+
+        //cudaStreamSynchronize(mTrtCudaStream);
+
+    }
+
 
     void cttrtNet::saveEngine(const std::string & file_path){
-        if(mEngine){
-            nvinfer1::IHostMemory* serialized_model  = mEngine->serialize(); //将反序列的 再次序列回去
+        if(mTrtEngine){
+            nvinfer1::IHostMemory* serialized_model  = mTrtEngine->serialize(); //将反序列的 再次序列回去
             std::ofstream file(file_path, std::ios::binary | std::ios::out);
             file.write((char*)(serialized_model -> data()), serialized_model -> size());
             file.close();
@@ -151,24 +201,3 @@ namespace cttrt
 } //namespace cttrt closed
 
 
-/////下面要删除
-//std::ofstream ofs("serialized_engine.trt", std::ios::out | std::ios::binary);
-//ofs.write((char*)(serialized_model ->data()), serialized_model ->size());
-//ofs.close();
-//
-//
-//if(mEngine)
-//{
-//nvinfer1::IHostMemory* data = mEngine->serialize(); //创建data指针 指向 engine 序列化
-//std::ofstream file; //ofstream 读取文件
-//file.open(fileName,std::ios::binary | std::ios::out); //为输出而打开文件（以二进制的方式）
-//
-//if(!file.is_open())//如果没有成功开启
-//{
-//std::cout << "read create engine file" << fileName <<" failed" << std::endl;
-//return;
-//}
-//
-//file.write((const char*)data->data(), data->size()); //写入engine
-//file.close();
-//}

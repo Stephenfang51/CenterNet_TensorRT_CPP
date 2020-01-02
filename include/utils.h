@@ -17,6 +17,11 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
+
+
+#ifndef BLOCK
+#define BLOCK 512
+#endif
 #ifndef CUDA_CHECK
 #define CUDA_CHECK(callstr)                                                                    \
     {                                                                                          \
@@ -30,21 +35,7 @@
 
 
 
-///将cudaMalloc重新封装， 添加了避免显存不够的问题
-inline void* safeCudaMalloc(size_t memSize)
-{
-    void* deviceMem;
-    CUDA_CHECK(cudaMalloc(&deviceMem, memSize));
-    //&deviceMem为指针的地址
-    //memSize 为自己定义要分配多大的尺寸
 
-    if (deviceMem == nullptr) //如果分配结束的deviceMme为空指针， 表示显存不够分配
-    {
-        std::cerr << "Out of memory" << std::endl;
-        exit(1);
-    }
-    return deviceMem;
-}
 
 class Logger : public nvinfer1::ILogger
 {
@@ -71,7 +62,7 @@ public:
         std::cerr << msg << std::endl;
     }
     Severity reportableSeverity;
-};
+}; //closed Logger
 
 
 
@@ -79,7 +70,7 @@ public:
 inline int64_t volume(const nvinfer1::Dims& d)
 {
     return std::accumulate(d.d, d.d + d.nbDims, 1, std::multiplies<int64_t>());
-}
+};
 
 ///获取trt的DataType 类型的size
 inline unsigned int getElementSize(nvinfer1::DataType t)
@@ -93,8 +84,50 @@ inline unsigned int getElementSize(nvinfer1::DataType t)
     }
     throw std::runtime_error("Invalid DataType.");
     return 0;
-}
+} //close getElementSize
+
+
+///将cudaMalloc重新封装， 添加了避免显存不够的问题
+inline void* safeCudaMalloc(size_t memSize)
+{
+    void* deviceMem;
+    CUDA_CHECK(cudaMalloc(&deviceMem, memSize));
+    //&deviceMem为指针的地址
+    //memSize 为自己定义要分配多大的尺寸
+
+    if (deviceMem == nullptr) //如果分配结束的deviceMme为空指针， 表示显存不够分配
+    {
+        std::cerr << "Out of memory" << std::endl;
+        exit(1);
+    }
+    return deviceMem;
+} //closed safeCudaMalloc
+
+
+struct Box{
+    float x1;
+    float y1;
+    float x2;
+    float y2;
+};
+struct landmarks{
+    float x;
+    float y;
+};
+struct Detection{
+    //x1 y1 x2 y2
+    Box bbox;
+    //float objectness;
+    int classId;
+    float prob;
+    landmarks marks[5];
+};
+
+
+
 
 extern cv::Scalar randomColor(cv::RNG& rng);
+extern dim3 cudaGridSize(uint n);
+
 
 #endif //CENTERNET_TRT_UTILS_H
