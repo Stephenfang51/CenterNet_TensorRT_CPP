@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <fstream>
 #include <chrono>
-#include <ct_trt_config.h>
+#include <cttrt_config.h>
 
 //#include <entroyCalibrator.h>
 
@@ -19,7 +19,7 @@ namespace cttrt
 //                        const std::string& calibfile,
 //                        RUN_MODE mode): mContext(nullptr), mEngine(nullptr),
 //                        mRunTime(nullptr), runMode(mode), runIters(0)
-    cttrtNet::cttrtNet(const std::string & onnxfile,
+    cttrtNet::cttrtNet(std::string & onnxfile,
                        const std::string& calibfile,
                        RUN_MODE mode): runMode(mode)
     {

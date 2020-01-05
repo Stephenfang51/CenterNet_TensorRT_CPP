@@ -26,7 +26,7 @@ namespace cttrt {
 
     public:
 
-        cttrtNet(const std::string &onnxfile,
+        cttrtNet(std::string &onnxfile,
                  const std::string &calibfile = 0,
                  RUN_MODE mode = RUN_MODE::FLOAT32);
 

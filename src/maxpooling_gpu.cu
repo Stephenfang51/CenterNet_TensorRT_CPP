@@ -2,7 +2,7 @@
 // Created by StephenFang on 2019/12/25.
 //
 
-#include <ct_trt_config.h>
+#include <cttrt_config.h>
 #include <maxpooling_gpu.h>
 __device__ float Logist(float data){ return 1./(1. + exp(-data)); }
 
