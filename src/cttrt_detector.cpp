@@ -79,3 +79,31 @@ void post_process(std::vector<Detection> & result, const cv::Mat& img){
     }
 
 }//postprocess closed
+
+
+//TODO 编写中，传入检测结果在传入img， 将检测到的label和bbox画在图上
+void drawbbox(const std::vector<Detection> & result, cv::Mat & img){
+    int mark;
+    int box_think = (img.rows+img.cols) * .001 ;
+    float label_scale = img.rows * 0.0009;
+    int base_line ;
+    cv::Scalar color = (200, 140, 200);
+
+
+    for (const auto & item : result){
+        std::string label;
+        std::stringstream stream;
+
+        stream << cttrt::className[item.classId] << " " << item.prob << std::endl;
+        std::getline(stream, label);
+
+        //get height, width of textbox
+        auto size = cv::getTextSize(label, cv::FONT_HERSHEY_COMPLEX, label_scale,  1, &base_line);
+
+        cv::rectangle(img, cv::Point(item.bbox.x1,item.bbox.y1),
+                      cv::Point(item.bbox.x2 ,item.bbox.y2),
+                      color[item.classId], box_think, 8, 0);
+
+        cv::putText(img, label, cv::Point(item.bbox.x2, item.bbox.y2 - size.height), cv::FONT_HERSHEY_COMPLEX, label_scale, color, box_think/3, 8, 0);
+    }
+}//drawbox closed

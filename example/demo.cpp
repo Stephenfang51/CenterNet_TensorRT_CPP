@@ -24,7 +24,7 @@ parse(int argc, char* argv[])
         options.add_options("groups")
                 ("e, engine", "the path of engine file", cxxopts::value<std::string>())
                 ("i, image", "the path of test image", cxxopts::value<std::string>())
-                ("v, video", "the path of test video", cxxopts::value<std::string>())
+                ("v, video", "the path of test video", cxxopts::value<std::string>()) //TODO webcam mode 待新增
                 ;
         auto result = options.parse(argc, argv);
         if (result.count("engine")){
@@ -103,11 +103,8 @@ int main(int argc, char* argv[]){
         memcpy(result.data(), &outputData[1], num_det * sizeof(Detection));
 
         post_process(result, img);
-
-
-
-
-
+        //TODO draw bbox ? and imshow and save to disk ?
+        drawbbox(result, img);
 
         cv::imshow("det result", img);
         cv::waitKey(0);
@@ -116,9 +113,37 @@ int main(int argc, char* argv[]){
     if (result.count("video")){
         std::string video = result["video"].as<std::string>();
         //TODO
+        cv::VideoCapture cap(video);
+//        while (cap.read(video))
+        while(true)
+        {
+            cv::Mat frame;
+            if (!cap.read(frame)) // if not success, break loop
+                // read() decodes and captures the next frame.
+            {
+                std::cout<<"\n Cannot read the video file. \n";
+                break;
+            }
+
+            auto inputData = prepareImage(frame);
+            net.doInference(inputData.data(), outputData.get());
+
+            int num_det = static_cast<int>(outputData[0]); //num of detection
+            std::vector<Detection> result;
+            result.resize(num_det);
+            memcpy(result.data(), &outputData[1], num_det * sizeof(Detection));
+
+            post_process(result, frame);
+
+            //TODO draw bbox ? and imshow and save to disk ?
+            drawbbox(result, frame);
+            cv::imshow("det result", frame);
+            cv::waitKey(0);
+        }
+        cap.release();
     }
 
 
 
 
-}
+} // main closed

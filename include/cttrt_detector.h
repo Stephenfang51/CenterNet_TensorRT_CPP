@@ -15,7 +15,7 @@
 
 extern std::vector<float> prepareImage(cv::Mat & img);
 extern void post_process(std::vector<Detection> & result, const cv::Mat& img);
-
+extern void drawbbox(const std::vector<Detection> & result, cv::Mat & img);
 
 
 #endif //CENTERNET_TRT_CTTER_DETECTOR_H
