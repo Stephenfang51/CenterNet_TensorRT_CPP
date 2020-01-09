@@ -113,11 +113,14 @@ int main(int argc, char* argv[]){
     if (result.count("video")){
         std::string video = result["video"].as<std::string>();
         //TODO
+        cv::Mat frame;
         cv::VideoCapture cap(video);
 //        while (cap.read(video))
         while(true)
         {
-            cv::Mat frame;
+
+
+            cap.read(frame);
             if (!cap.read(frame)) // if not success, break loop
                 // read() decodes and captures the next frame.
             {
