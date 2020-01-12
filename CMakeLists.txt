@@ -71,7 +71,7 @@ file(GLOB CU_SRC src/*.cu) ## src下cu文件 必须加上
 #src先将测试用的main.cpp拿掉， 留下demo.cpp中的main 否则重叠
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
-set(src ${src}  example/demo.cpp example/buildEngine.cpp)
+set(src ${src}  example/demo.cpp example/buildEngine.cpp example/webcam_demo.cpp)
 
 
 #add_executable(main_test ${src})
@@ -85,6 +85,8 @@ target_link_libraries(demo ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
 cuda_add_executable(buildEngine example/buildEngine.cpp ${CPP_SRC} ${CU_SRC})
 target_link_libraries(buildEngine ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
 
+cuda_add_executable(webcam_demo example/webcam_demo.cpp ${CPP_SRC} ${CU_SRC})
+target_link_libraries(webcam_demo ${OpenCV_LIBS} ${TENSORRT_LIBRARY})
 
 
 #add_executable(demo example/demo.cpp ${src})
