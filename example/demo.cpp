@@ -36,13 +36,13 @@ parse(int argc, char* argv[])
             exit(-1);
         }
         if (result.count("image")){
-            std::cout << result["image read"].as<std::string>() << std::endl;
+            std::cout << result["image"].as<std::string>() << std::endl;
         }
         else {
             std::cout << "No test image provided" << std::endl;
         }
         if (result.count("video")){
-            std::cout << result["video read"].as<std::string>() << std::endl;
+            std::cout << result["video"].as<std::string>() << std::endl;
         }
         else {
             std::cout << "No test video provided" << std::endl;
