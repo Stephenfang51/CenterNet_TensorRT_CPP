@@ -11,9 +11,13 @@
 #include <numeric>
 #include "NvInferPlugin.h"
 #include "NvOnnxParser.h"
+#include "NvOnnxParserRuntime.h"
 #include <cttrt_Net.h>
 #include <utils.h>
 #include <cxxopts.hpp>
+
+
+
 namespace cttrt {
     enum struct RUN_MODE
     {
@@ -33,7 +37,8 @@ namespace cttrt {
                  RUN_MODE mode = RUN_MODE::FLOAT32);
 
 
-        cttrtNet(const std::string &enginefile);
+        cttrtNet(const std::string &enginefile, bool demo);
+        //TODO 需要增加参数区别构造函数, 暂时先用demo
 
         ~cttrtNet() {
             //TODO 析构函数待完成
@@ -58,6 +63,7 @@ namespace cttrt {
         nvinfer1::IExecutionContext *mTrtContext = nullptr;
         nvinfer1::ICudaEngine *mTrtEngine = nullptr;
         nvinfer1::IRuntime *mTrtRunTime = nullptr;
+        //TODO 需要添加mTrtPlugin空指针
 
         //    nvinfer1::IExecutionContext* mContext;
         //    nvinfer1::ICudaEngine* mEngine;

@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
 
 
     ///1. get Net done
-    cttrt::cttrtNet net(engine);
+    cttrt::cttrtNet net(engine, true); //TODO true只是区别构造函数
     std::unique_ptr<float[]> outputData(new float[net.outputBufferSize]);
 
 

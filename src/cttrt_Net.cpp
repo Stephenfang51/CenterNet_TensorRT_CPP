@@ -76,8 +76,9 @@ namespace cttrt
 
     } //first 构造函数
 
+    //TODO 需要增加参数区别构造函数
+    cttrtNet::cttrtNet(const std::string&enginefile, bool demo){
 
-    cttrtNet::cttrtNet(const std::string&enginefile){
         using namespace std;
         std::fstream file;
         file.open(enginefile, ios::binary | ios::in); //二进制方式读取文件
@@ -97,6 +98,8 @@ namespace cttrt
 
         file.close();
         ///反序列化
+
+        //TODO 需要初始化plugin
 
         std::cout << "deserializing " << std::endl;
 
