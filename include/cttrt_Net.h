@@ -26,15 +26,17 @@ namespace cttrt {
 
     public:
 
+//        cttrtNet(std::string &onnxfile,
+//                 const std::string &calibfile = 0,
+//                 RUN_MODE mode = RUN_MODE::FLOAT32);
         cttrtNet(std::string &onnxfile,
-                 const std::string &calibfile = 0,
                  RUN_MODE mode = RUN_MODE::FLOAT32);
 
 
         cttrtNet(const std::string &enginefile);
 
         ~cttrtNet() {
-            ///?
+            //TODO 析构函数待完成
         }
 
 

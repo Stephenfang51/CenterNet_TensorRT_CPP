@@ -15,12 +15,11 @@ static Logger gLogger;
 
 namespace cttrt
 {
-//    cttrtNet::cttrtNet(const std::string & onnxfile,
-//                        const std::string& calibfile,
-//                        RUN_MODE mode): mContext(nullptr), mEngine(nullptr),
-//                        mRunTime(nullptr), runMode(mode), runIters(0)
+//
+//    cttrtNet::cttrtNet(std::string & onnxfile,
+//                       const std::string& calibfile,
+//                       RUN_MODE mode): runMode(mode)
     cttrtNet::cttrtNet(std::string & onnxfile,
-                       const std::string& calibfile,
                        RUN_MODE mode): runMode(mode)
     {
         const int maxBatchSize = 1;

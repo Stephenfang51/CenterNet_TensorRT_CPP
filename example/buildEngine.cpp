@@ -62,8 +62,8 @@ int main(int argc, char* argv[]){
     if(result["mode"].as<int>() == 1 ) mode = cttrt::RUN_MODE::FLOAT16;
     if(result["mode"].as<int>() == 2 ) mode = cttrt::RUN_MODE::INT8;
 
-    //TODO cttrtNet 的calibfile 还没建构好 暂时先用input_onnxfile替代
-    cttrt::cttrtNet net = cttrt::cttrtNet(input_onnxfile, output_engine_file, mode);
+    //TODO 尚未建构Calibrator
+    cttrt::cttrtNet net = cttrt::cttrtNet(input_onnxfile, mode);
     net.saveEngine(result["output_engine_file"].as<std::string>());
     std::cout << "save Engine sucessfully" << std::endl;
 
