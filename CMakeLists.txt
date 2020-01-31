@@ -37,8 +37,12 @@ find_library(TENSORRT_LIBRARY_PARSER nvparsers
 find_library(TENSORRT_LIBRARY_ONNXPARSER nvonnxparser
         HINTS  ${TENSORRT_ROOT} ${TENSORRT_BUILD} ${CUDA_TOOLKIT_ROOT_DIR}
         PATH_SUFFIXES lib lib64 lib/x64)
+
+find_library(TRT_ONNXPARSER_RUNTIME libnvonnxparser_runtime.so
+        HINTS  /usr/lib/aarch64-linux-gnu/)
+
 set(TENSORRT_LIBRARY ${TENSORRT_LIBRARY_INFER} ${TENSORRT_LIBRARY_INFER_PLUGIN}
-        ${TENSORRT_LIBRARY_PARSER} ${TENSORRT_LIBRARY_ONNXPARSER})
+        ${TENSORRT_LIBRARY_PARSER} ${TENSORRT_LIBRARY_ONNXPARSER} ${TRT_ONNXPARSER_RUNTIME})
 message(STATUS "Find TensorRT libs at ${TENSORRT_LIBRARY}")
 
 find_package_handle_standard_args(

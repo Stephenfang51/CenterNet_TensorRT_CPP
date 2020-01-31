@@ -63,7 +63,8 @@ namespace cttrt {
         nvinfer1::IExecutionContext *mTrtContext = nullptr;
         nvinfer1::ICudaEngine *mTrtEngine = nullptr;
         nvinfer1::IRuntime *mTrtRunTime = nullptr;
-        //TODO 需要添加mTrtPlugin空指针
+        nvonnxparser::IPluginFactory *mTrtPlugins = nullptr;
+
 
         //    nvinfer1::IExecutionContext* mContext;
         //    nvinfer1::ICudaEngine* mEngine;

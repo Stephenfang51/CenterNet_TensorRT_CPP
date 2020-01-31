@@ -99,13 +99,13 @@ namespace cttrt
         file.close();
         ///反序列化
 
-        //TODO 需要初始化plugin
 
+        mTrtPlugins = nvonnxparser::createPluginFactory(gLogger);
         std::cout << "deserializing " << std::endl;
 
 
         mTrtRunTime = nvinfer1::createInferRuntime(gLogger);
-        mTrtEngine = mTrtRunTime->deserializeCudaEngine(data.get(), length, nullptr);
+        mTrtEngine = mTrtRunTime->deserializeCudaEngine(data.get(), length, mTrtPlugins);
         //(const void * 	blob, std::size_t 	size, IPluginFactory * 	pluginFactory)
 
 //        InitEngine();
