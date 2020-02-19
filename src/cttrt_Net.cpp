@@ -35,6 +35,7 @@ namespace cttrt
 
         //onnxParser 无法编译？？？
 //        nvonnxparser::IONNXParser * parser = nvonxparser::createONNXParser(*network, gLogger);
+        mTrtPlugins = nvonnxparser::createPluginFactory(gLogger);
         auto parser = nvonnxparser::createParser(*network, gLogger);
         std::cout << "start parsing model " << std::endl;
         //Ingest the model
@@ -46,32 +47,42 @@ namespace cttrt
         //builder config
         builder->setMaxBatchSize(maxBatchSize);
         builder->setMaxWorkspaceSize(1 << 30);
-        builder ->setFp16Mode(true);
+        //TODO 是否是造成错误原因？
+//        builder ->setFp16Mode(true);
 
         //build Engine
         std::cout << "start building engine" << std::endl;
         nvinfer1::ICudaEngine* engine = builder->buildCudaEngine(*network);
 //        nvinfer1::ICudaEngine* engine = builder->buildEngineWithConfig(*network);
         //buildcudaEngine will be removed future
-        std::cout << "build engine finished" << std::endl;
+        if (!engine){
+            std::string error_message ="Unable to create engine";
+            gLogger.log(nvinfer1::ILogger::Severity::kERROR, error_message.c_str());
+            exit(-1);
+        }
 
+        std::cout << "build engine finished" << std::endl;
+        std::cout << "1" << std::endl;
+        nvinfer1::IHostMemory * serializedEngine = engine->serialize();
+        ////save to disk ? 原作者这里没有直接save engine to disk, 而是另外做了一个save engine function
+        ////covnersion and run Engine should be on the same GPU
+        std::cout << "2" << std::endl;
+        engine->destroy();
         parser->destroy();
         network->destroy();
 //        config->destroy();
         builder->destroy();
 
-        nvinfer1::IHostMemory * serializedEngine = engine->serialize();
-        ////save to disk ? 原作者这里没有直接save engine to disk, 而是另外做了一个save engine function
-        ////covnersion and run Engine should be on the same GPU
-        engine->destroy();
 
 
+        std::cout << "3" << std::endl;
         mTrtRunTime = nvinfer1::createInferRuntime(gLogger);
-        mTrtEngine= mTrtRunTime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size(), nullptr);
+        std::cout << "4" << std::endl;
+        mTrtEngine= mTrtRunTime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size(), mTrtPlugins);
         //执行反序列因为要开始inference
-
+        std::cout << "5" << std::endl;
         serializedEngine->destroy(); //反序列结束可以destroy了
-
+        std::cout << "6" << std::endl;
 
 
     } //first 构造函数
@@ -108,7 +119,7 @@ namespace cttrt
         mTrtEngine = mTrtRunTime->deserializeCudaEngine(data.get(), length, mTrtPlugins);
         //(const void * 	blob, std::size_t 	size, IPluginFactory * 	pluginFactory)
 
-//        InitEngine();
+        InitEngine();
 
     }//constructor （engine）
 
@@ -164,21 +175,19 @@ namespace cttrt
             CUDA_CHECK(cudaStreamCreate(&mTrtCudaStream));
         } //InitEngine closed
 
-    void cttrtNet::doInference(const void* inputData, void* outputData ,int batchSize)
-    {
-//        const int batchSize = 1;
 
-        // DMA the input to the GPU,  execute the batch asynchronously, and DMA it back:
-        int inputIndex = 0;
+    void cttrtNet::doInference(const void *inputData, void *outputData)
+    {
+        const int batchSize = 1;
+        int inputIndex = 0 ;
         CUDA_CHECK(cudaMemcpyAsync(mTrtCudaBuffer[inputIndex], inputData, mTrtBindBufferSize[inputIndex], cudaMemcpyHostToDevice, mTrtCudaStream));
         auto t_start = std::chrono::high_resolution_clock::now();
         mTrtContext->execute(batchSize, &mTrtCudaBuffer[inputIndex]);
+        CUDA_CHECK(cudaMemset(cudaOutputBuffer, 0, sizeof(float)));
 
-        ///max pooling and post process
         maxPooling_gpu(static_cast<const float *>(mTrtCudaBuffer[1]),static_cast<const float *>(mTrtCudaBuffer[2]),
-                         static_cast<const float *>(mTrtCudaBuffer[3]),static_cast<float *>(cudaOutputBuffer),
-                         ouputSize,ouputSize,classNum,kernelSize,visThresh);
-
+                             static_cast<const float *>(mTrtCudaBuffer[3]),static_cast<float *>(cudaOutputBuffer),
+                             inputSize/4,inputSize/4,classNum,kernelSize,visThresh);
         auto t_end = std::chrono::high_resolution_clock::now();
         float total = std::chrono::duration<float, std::milli>(t_end - t_start).count();
 
@@ -186,9 +195,8 @@ namespace cttrt
 
         CUDA_CHECK(cudaMemcpyAsync(outputData, cudaOutputBuffer, outputBufferSize, cudaMemcpyDeviceToHost, mTrtCudaStream));
 
-        //cudaStreamSynchronize(mTrtCudaStream);
-
-    }
+//        runIters++ ;
+    }//doInference closed
 
 
     void cttrtNet::saveEngine(const std::string & file_path){

@@ -8,43 +8,91 @@
 
 
 std::vector<float> prepareImage(cv::Mat & img){
-    int channel = cttrt::channel; //default = 3
-    int inputSize = cttrt::inputSize;
-    float scale = std::min(float(inputSize)/img.cols,float(inputSize)/img.rows);
-    auto scaleSize = cv::Size(img.cols * scale,img.rows * scale); //定义缩放后的尺寸
+//    int channel = cttrt::channel; //default = 3
+//    int inputSize = cttrt::inputSize;
+//
+//    float scale = std::min(float(inputSize)/img.cols,float(inputSize)/img.rows);
+//
+//    auto scaleSize = cv::Size(img.cols * scale,img.rows * scale); //定义缩放后的尺寸
+//
+//    cv::Mat img_resized;
+//
+//    cv::resize(img, img_resized, scaleSize, 0, 0);
+//
+//
+//
+//    cv::Mat sample_resized =cv::Mat(inputSize, inputSize, CV_8UC3,cv::Scalar(0,0,0));
+//
+//    cv::Rect rect((inputSize- scaleSize.width)/2, (inputSize-scaleSize.height)/2, scaleSize.width,scaleSize.height);
+//
+//
+//    cv::Mat imageROI = sample_resized(rect);
+//
+//    img_resized.copyTo(imageROI);
+//
+//    cv::Mat img_float;
+//
+//    imageROI.convertTo(img_float, CV_32FC3, 1./255.); //顺便标准化
+//
+//    img_float = img_float - cv::Scalar(0.485, 0.456, 0.406); // 减去均值
+//
+//
+//    std::vector<cv::Mat> tem_input_channels(channel); //3 channels
+//
+//    cv::split(img_float, tem_input_channels); //split img_float into 3 different channels
+//
+//    cv::Mat B = tem_input_channels.at(0) / 0.229;
+//    cv::Mat G = tem_input_channels.at(1) / 0.224;
+//    cv::Mat R = tem_input_channels.at(2) / 0.225;
+//
+//    std::vector<cv::Mat> result;
+//
+//    result.push_back(B);
+//    result.push_back(G);
+//    result.push_back(R);
+//
+//    std::vector<float> result_img;
+//
+//    cv::merge(result, result_img);
+//    std::cout << "19" << std::endl;
+//    return result_img;
 
-    cv::Mat img_resized;
-    cv::resize(img, img_resized, scaleSize, 0, 0);
+    int channel = 3;
+    int input_w = 512;
+    int input_h = 512;
+    float scale = cv::min(float(input_w)/img.cols,float(input_h)/img.rows);
+    auto scaleSize = cv::Size(img.cols * scale,img.rows * scale);
 
-    cv::Mat sample_resized =cv::Mat(inputSize, inputSize, CV_8UC3,cv::Scalar(0,0,0));
-    cv::Rect rect((inputSize- scaleSize.width)/2, (inputSize-scaleSize.height)/2, scaleSize.width,scaleSize.height);
+    cv::Mat resized;
+    cv::resize(img, resized,scaleSize,0,0);
 
 
-    cv::Mat imageROI = sample_resized(rect);
-    img_resized.copyTo(imageROI);
+    cv::Mat cropped = cv::Mat::zeros(input_h,input_w,CV_8UC3);
+    cv::Rect rect((input_w- scaleSize.width)/2, (input_h-scaleSize.height)/2, scaleSize.width,scaleSize.height);
+
+    resized.copyTo(cropped(rect));
+
 
     cv::Mat img_float;
-    imageROI.convertTo(img_float, CV_32FC3, 1./255.); //顺便标准化
-    img_float = img_float - cv::Scalar(0.485, 0.456, 0.406); // 减去均值
 
+    cropped.convertTo(img_float, CV_32FC3,1./255.);
 
-    std::vector<cv::Mat> tem_input_channels(channel); //3 channels
-    cv::split(img_float, tem_input_channels); //split img_float into 3 different channels
+    //HWC TO CHW
+    std::vector<cv::Mat> input_channels(channel);
+    cv::split(img_float, input_channels);
 
-    cv::Mat B = tem_input_channels.at(0) / 0.229;
-    cv::Mat G = tem_input_channels.at(1) / 0.224;
-    cv::Mat R = tem_input_channels.at(2) / 0.225;
-
-    std::vector<cv::Mat> result;
-    result.push_back(B);
-    result.push_back(G);
-    result.push_back(R);
-
-    std::vector<float> result_img;
-    cv::merge(result, result_img);
-
-    return result_img;
-
+    // normalize
+    std::vector<float> result(input_h*input_w*channel);
+    auto data = result.data();
+    int channelLength = input_h * input_w;
+    static float mean[]= {0.485,0.456,0.406};
+    static float std[] = {0.229,0.224,0.225};
+    for (int i = 0; i < channel; ++i) {
+        cv::Mat normed_channel = (input_channels[i]-mean[i])/std[i];
+        memcpy(data,normed_channel.data,channelLength*sizeof(float));
+        data += channelLength;
+    }
+    return result;
 
 } //preprocess closed
 
@@ -88,6 +136,7 @@ void drawbbox(const std::vector<Detection> & result, cv::Mat & img){
     float label_scale = img.rows * 0.0009;
     int base_line ;
     cv::Scalar color = (200, 140, 200);
+    cv::Mat image = img.clone();
 
 
     for (const auto & item : result){
@@ -100,10 +149,11 @@ void drawbbox(const std::vector<Detection> & result, cv::Mat & img){
         //get height, width of textbox
         auto size = cv::getTextSize(label, cv::FONT_HERSHEY_COMPLEX, label_scale,  1, &base_line);
 
-        cv::rectangle(img, cv::Point(item.bbox.x1,item.bbox.y1),
+        cv::rectangle(image, cv::Point(item.bbox.x1,item.bbox.y1),
                       cv::Point(item.bbox.x2 ,item.bbox.y2),
                       color[item.classId], box_think, 8, 0);
 
-        cv::putText(img, label, cv::Point(item.bbox.x2, item.bbox.y2 - size.height), cv::FONT_HERSHEY_COMPLEX, label_scale, color, box_think/3, 8, 0);
+        cv::putText(image, label, cv::Point(item.bbox.x2, item.bbox.y2 - size.height), cv::FONT_HERSHEY_COMPLEX, label_scale, color, box_think/3, 8, 0);
     }
+    cv::imshow("result", image);
 }//drawbox closed
