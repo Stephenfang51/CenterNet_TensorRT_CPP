@@ -35,7 +35,7 @@ parse(int argc, char* argv[])
         }
         if (result.count("csi")){
 
-            std::cout << "The CSI camera mode set is" << result["csi"].as<bool>() << std::endl;
+            std::cout << "The CSI camera mode set is " << result["csi"].as<bool>() << std::endl;
         }
         else {
             std::cout << "The CS camera mode set is false" << std::endl;
@@ -60,36 +60,38 @@ int main(int argc, char* argv[]){
 
     ///1. get Net done
     std::string engine = result["engine"].as<std::string>();
-    cttrt::cttrtNet net(engine);
+    cttrt::cttrtNet net(engine, true);
     std::unique_ptr<float[]> outputData(new float[net.outputBufferSize]);
 
+    int capture_width = 1280 ;
+    int capture_height = 720 ;
+    int display_width = 1280 ;
+    int display_height = 720 ;
+    int framerate = 30 ;
+    int flip_method = 0 ;
+
+    std::string pipeline = gstreamer_pipeline(capture_width,
+                                              capture_height,
+                                              display_width,
+                                              display_height,
+                                              framerate,
+                                              flip_method);
+    std::cout << "Using pipeline: \n\t" << pipeline << "\n";
+
+    cv::VideoCapture cap(pipeline, cv::CAP_GSTREAMER);
+    if(!cap.isOpened()) {
+        std::cout<<"Failed to open camera."<<std::endl;
+        return (-1);
+    }
     ///如果CSI为true
     if (result["csi"].as<bool>() == true) {
 
 
 
-        int capture_width = 1280 ;
-        int capture_height = 720 ;
-        int display_width = 1280 ;
-        int display_height = 720 ;
-        int framerate = 60 ;
-        int flip_method = 0 ;
 
-        std::string pipeline = gstreamer_pipeline(capture_width,
-                                                  capture_height,
-                                                  display_width,
-                                                  display_height,
-                                                  framerate,
-                                                  flip_method);
-        std::cout << "Using pipeline: \n\t" << pipeline << "\n";
 
-        cv::VideoCapture cap(pipeline, cv::CAP_GSTREAMER);
-        if(!cap.isOpened()) {
-            std::cout<<"Failed to open camera."<<std::endl;
-            return (-1);
-        }
-
-        cv::namedWindow("CSI Camera", cv::WINDOW_AUTOSIZE);
+        cv::namedWindow("result", cv::WINDOW_NORMAL);
+        cv::resizeWindow("result",1024,768);
         std::cout << "Hit ESC to exit" << "\n" ;
 
 
@@ -99,41 +101,46 @@ int main(int argc, char* argv[]){
         int tick = 0;
         int fps = 0;
         cv::Mat frame; //for read
-        cv::Mat output; // for writing to disk
+//        cv::Mat show; // for imshow
+        //TODO 暂时先不保存video, 看能否提速
+//        cv::Mat output; // for writing to disk
 
 
 
 
         ///define writer
-        cv::VideoWriter writer;
-        int codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
-        writer.open("appsrc ! autovideoconvert ! omxh264enc ! matroskamux ! filesink location=test.mp4 ", codec, (double)25, cv::Size(1280, 720), true);
+        //TODO 暂时先不保存video, 看能否提速
+//        cv::VideoWriter writer;
+//        int codec = cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
+//        writer.open("appsrc ! autovideoconvert ! omxh264enc ! matroskamux ! filesink location=test.mp4 ", codec, (double)25, cv::Size(1280, 720), true);
+//
+//        if (!writer.isOpened()) {
+//            std::cout << "Could not open the output video file for write\n";
+//            return -1;
+//        }
 
-        if (!writer.isOpened()) {
-            std::cout << "Could not open the output video file for write\n";
-            return -1;
-        }
-
+//        while(true)
         while(true)
         {
-            cap.read(frame);
+
             if (!cap.read(frame))
             {
                 std::cout<<"\n Cannot read the video file. \n";
                 break;
             }
-
+//            cap.read(frame);
+//            show = frame;
             auto inputData = prepareImage(frame);
             net.doInference(inputData.data(), outputData.get());
 
             int num_det = static_cast<int>(outputData[0]); //num of detection
-            std::vector<Detection> result;
-            result.resize(num_det);
-            memcpy(result.data(), &outputData[1], num_det * sizeof(Detection));
+            std::vector<Detection> det_result;
+            det_result.resize(num_det);
+            memcpy(det_result.data(), &outputData[1], num_det * sizeof(Detection));
 
-            post_process(result, frame);
+            post_process(det_result, frame);
 
-            drawbbox(result, frame);
+            drawbbox(det_result, frame); //draw bbox on frame
             //write to disk after drawbbox
             ///count fps
             frameCounter++;
@@ -146,60 +153,64 @@ int main(int argc, char* argv[]){
             }
 
             ///put fps text
-            cv::putText(frame, cv::format("Average FPS=%d",fps),
-                        cv::Point(30, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0,0,255));
+//            cv::putText(frame, cv::format("Average FPS=%d",fps),
+//                        cv::Point(30, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0,0,255));
 
-            frame.convertTo(output, CV_8UC3);
-            writer.write(output); //write
+            //TODO 暂时先不保存video, 看能否提速
+//            frame.convertTo(output, CV_8UC3);
+//            writer.write(output); //write
 
-            cv::imshow("det result", frame);
+//            cv::imshow("result", frame);
+//            int keycode = cv::waitKey(30) & 0xff ;
             int keycode = cv::waitKey(30) & 0xff ;
             if (keycode == 27) break ;
-        }
-        cap.release();
-        cv::destroyAllWindows() ;
-
-    }
-        ///主要for non-gstreamer
-    else {
-        cv::VideoCapture cap(0);
-        cv::VideoWriter writer;
-        writer.open("output.mp4", CV_FOURCC('M', 'J', 'P', 'G'), (double)25, cv::Size(640, 480));
-        cv::Mat frame;
-        cv::Mat output;
-        while(true)
-        {
-            cap.read(frame);
-            if (!cap.read(frame)) // if not success, break loop
-                // read() decodes and captures the next frame.
-            {
-                std::cout<<"\n Cannot read the video file. \n";
-                break;
             }
-
-            auto inputData = prepareImage(frame);
-            net.doInference(inputData.data(), outputData.get());
-
-            int num_det = static_cast<int>(outputData[0]); //num of detection
-            std::vector<Detection> result;
-            result.resize(num_det);
-            memcpy(result.data(), &outputData[1], num_det * sizeof(Detection));
-
-            post_process(result, frame);
-
-
-            drawbbox(result, frame);
-            frame.convertTo(output, CV_8UC3);
-            writer.write(output);
-
-            cv::imshow("det result", frame);
-            cv::waitKey(0);
-        }
         cap.release();
         cv::destroyAllWindows() ;
         return 0;
+        }
+
     }
+        ///主要for non-gstreamer
+//    else {
+//        cv::VideoCapture cap(0);
+//        cv::VideoWriter writer;
+//        writer.open("output.mp4", CV_FOURCC('M', 'J', 'P', 'G'), (double)25, cv::Size(640, 480));
+//        cv::Mat frame;
+//        cv::Mat output;
+//        while(true)
+//        {
+//            cap.read(frame);
+//            if (!cap.read(frame)) // if not success, break loop
+//                // read() decodes and captures the next frame.
+//            {
+//                std::cout<<"\n Cannot read the video file. \n";
+//                break;
+//            }
+//
+//            auto inputData = prepareImage(frame);
+//            net.doInference(inputData.data(), outputData.get());
+//
+//            int num_det = static_cast<int>(outputData[0]); //num of detection
+//            std::vector<Detection> result;
+//            result.resize(num_det);
+//            memcpy(result.data(), &outputData[1], num_det * sizeof(Detection));
+//
+//            post_process(result, frame);
+//
+//
+//            drawbbox(result, frame);
+//            frame.convertTo(output, CV_8UC3);
+//            writer.write(output);
+//
+//            cv::imshow("det result", frame);
+//            cv::waitKey(0);
+//        }
+//        cap.release();
+//        cv::destroyAllWindows() ;
+//        return 0;
+//    }
 
 
 
-} //closed
+//} //closed
