@@ -41,16 +41,29 @@ namespace cttrt {
         //TODO 需要增加参数区别构造函数, 暂时先用demo
 
         ~cttrtNet() {
-            //TODO 析构函数待完成
+            cudaStreamSynchronize(mTrtCudaStream);
+            cudaStreamDestroy(mTrtCudaStream);
+            for(auto& item : mTrtCudaBuffer)
+                cudaFree(item);
+            cudaFree(cudaOutputBuffer);
+            if(!mTrtRunTime)
+                mTrtRunTime->destroy();
+            if(!mTrtContext)
+                mTrtContext->destroy();
+            if(!mTrtEngine)
+                mTrtEngine->destroy();
+            if(!mTrtPlugins)
+                mTrtPlugins->destroy();
         }
+
 
 
 //        void saveEngine(const cxxopts::OptionValues & file_path);
         void saveEngine(const std::string & file_path);
 
 
-        void doInference(const void *inputData, void *outputData, int batchSize = 1);
-
+//        void doInference(const void *inputData, void *outputData, int batchSize = 1);
+        void doInference(const void* inputData, void * outputData);
         //void printTime()??
 
         int64_t outputBufferSize;
