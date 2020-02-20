@@ -129,31 +129,49 @@ void post_process(std::vector<Detection> & result, const cv::Mat& img){
 }//postprocess closed
 
 
-//TODO 编写中，传入检测结果在传入img， 将检测到的label和bbox画在图上
 void drawbbox(const std::vector<Detection> & result, cv::Mat & img){
-    int mark;
-    int box_think = (img.rows+img.cols) * .001 ;
-    float label_scale = img.rows * 0.0009;
+//    int box_think = (img.rows+img.cols) * .001 ;
+//    float label_scale = img.rows * 0.0009;
     int base_line ;
-    cv::Scalar color = (200, 140, 200);
-    cv::Mat image = img.clone();
+    cv::Scalar color = (100, 140, 100);
+    cv::Scalar color_text = (255, 255, 255);
 
 
     for (const auto & item : result){
-        std::string label;
-        std::stringstream stream;
+//        std::stringstream stream;
+        cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC3);
+        //get label text
 
-        stream << cttrt::className[item.classId] << " " << item.prob << std::endl;
-        std::getline(stream, label);
 
-        //get height, width of textbox
-        auto size = cv::getTextSize(label, cv::FONT_HERSHEY_COMPLEX, label_scale,  1, &base_line);
 
-        cv::rectangle(image, cv::Point(item.bbox.x1,item.bbox.y1),
+        //drawing bounding bbox
+        cv::rectangle(img, cv::Point(item.bbox.x1,item.bbox.y1),
                       cv::Point(item.bbox.x2 ,item.bbox.y2),
-                      color[item.classId], box_think, 8, 0);
+                      color, 2);
+        cv::rectangle(mask,cv::Point(item.bbox.x1,item.bbox.y1),
+                      cv::Point(item.bbox.x2 ,item.bbox.y2),
+                      color, cv::FILLED, 0);
+        //creating label
+        char score_str[128];
+        sprintf(score_str, "%.2f", item.prob);
+        std::string label = std::string(cttrt::className[item.classId]) + " " + std::string(score_str);
+        //mask for text
+        cv::Point text_origin = cv::Point(item.bbox.x1 - 2, item.bbox.y1 - 3);
+        //get height, width of label box
+        auto text_size = cv::getTextSize(label, cv::FONT_HERSHEY_COMPLEX, 0.6,  2, &base_line);
 
-        cv::putText(image, label, cv::Point(item.bbox.x2, item.bbox.y2 - size.height), cv::FONT_HERSHEY_COMPLEX, label_scale, color, box_think/3, 8, 0);
+        //text background
+        cv::rectangle(img, cv::Point(text_origin.x, text_origin.y + 2),
+                      cv::Point(text_origin.x + text_size.width,
+                                text_origin.y - text_size.height),
+                      color, -1, 0);
+
+
+        //put text
+        cv::Point text_cordi = cv::Point(item.bbox.x1, item.bbox.y1-5);
+        cv::putText(img, label, text_cordi, cv::FONT_HERSHEY_COMPLEX, 0.6, color_text, 2);
+
     }
-    cv::imshow("result", image);
+    cv::imshow("result", img);
+    //TODO decide whether to remove
 }//drawbox closed
